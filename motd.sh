@@ -65,6 +65,13 @@ function sec2time (){
   fi
 }
 
+function check-ifstatus() {
+FOUND=`grep "eth0:\|wlan0:\|wlan1:\|usb0" /proc/net/dev`
+    if  [ -n "$FOUND" ] ; then
+      label$FOUND=""
+    fi
+}
+
 borderColor=35
 headerLeafColor=32
 headerRaspberryColor=31
@@ -97,7 +104,7 @@ greetings="$borderBar$(color $greetingsColor "$(center "Welcome back, $me!")")$b
 greetings="$greetings$borderBar$(color $greetingsColor "$(center "$(date +"%A, %d %B %Y, %T")")")$borderBar"
 
 # System information
-read loginFrom loginIP loginDate <<< $(last $me --time-format iso -2 | awk 'NR==2 { print $2,$3,$4 }')
+read loginFrom loginIP loginDate <<< $(last $me | awk 'NR==2 { print $2,$3,$4,$7 }')
 
 # TTY login
 if [[ $loginDate == - ]]; then
@@ -106,7 +113,7 @@ if [[ $loginDate == - ]]; then
 fi
 
 if [[ $loginDate == *T* ]]; then
-  login="$(date -d $loginDate +"%A, %d %B %Y, %T") ($loginIP)"
+  login="$(date -d $loginDate +"%A, %d %B %Y, ") $loginTime ($loginIP)"
 else
   # Not enough logins
   login="None"
@@ -130,7 +137,25 @@ label4="$borderBar  $(color $statsLabelColor "Home space....:") $label4$borderBa
 label5="$(extend "$(/opt/vc/bin/vcgencmd measure_temp | cut -c "6-9")ºC")"
 label5="$borderBar  $(color $statsLabelColor "Temperature...:") $label5$borderBar"
 
-stats="$label1\n$label2\n$label3\n$label4\n$label5"
+labeleth0="$(extend "$(ifconfig eth0 | grep "inet ad" | cut -f2 -d: | awk '{print $1}')")"
+labeleth0="$borderBar  $(color $statsLabelColor "IP of eth0....:") $labeleth0$borderBar"
+
+labelwlan0="$(extend "$(ifconfig wlan0 | grep "inet ad" | cut -f2 -d: | awk '{print $1}')")"
+labelwlan0="$borderBar  $(color $statsLabelColor "IP of wlan0...:") $labelwlan0$borderBar"
+
+labelwlan1="$(extend "$(ifconfig wlan1 | grep "inet ad" | cut -f2 -d: | awk '{print $1}')")"
+labelwlan1="$borderBar  $(color $statsLabelColor "IP of wlan1...:") $labelwlan1$borderBar"
+
+labelusb0="$(extend "$(ifconfig usb0 | grep "inet ad" | cut -f2 -d: | awk '{print $1}')")"
+labelusb0="$borderBar  $(color $statsLabelColor "IP of usb0....:") $labelusb0$borderBar"
+
+labelIPv4="$(extend "$(wget -q -O - http://ipv4.icanhazip.com/ | tail)")"
+labelIPv4="$borderBar  $(color $statsLabelColor "WAN IPv4......:") $labelIPv4$borderBar"
+
+labelIPv6="$(extend "$(wget -q -O - http://ipv6.icanhazip.com/ | tail)")"
+labelIPv6="$borderBar  $(color $statsLabelColor "WAN IPv6......:") $labelIPv6$borderBar"
+
+stats="$label1\n$label2\n$label3\n$label4\n$label5\n$labeleth0\n$labelwlan0\n$labelwlan1\n$labelusb0\n$labelIPv4\n$labelIPv6"
 
 # Print motd
-echo -e "$header\n$borderEmptyLine\n$greetings\n$borderEmptyLine\n$stats\n$borderEmptyLine\n$borderBottomLine"       
+echo -e "$header\n$borderEmptyLine\n$greetings\n$borderEmptyLine\n$stats\n$borderEmptyLine\n$borderBottomLine"      
